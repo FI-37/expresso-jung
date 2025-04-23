@@ -2,5 +2,15 @@ extends layout
 
 block content
   h1= message
-  p
+
+  if user
+    p Willkommen zurück, #{user.name}!
+    a(href="/dashboard") Zum Dashboard
+    |  |
+    a(href="/logout") Logout
+  else
+    p Noch keinen Account?
     a(href="/register") Jetzt registrieren
+
+    p Bereits registriert?
+    a(href="/login") Hier einloggen
