@@ -6,21 +6,37 @@ block content
   if error
     p(style="color: red") #{error}
 
-  form(action="/register" method="POST")
-    label(for="username") Benutzername:
-    input(type="text" id="username" name="username" required value=(typeof username !== 'undefined' ? username : ''))
-    br
-    br
-    label(for="name") Name:
-    input(type="text" id="name" name="name" required value=(typeof name !== 'undefined' ? name : ''))
-    br
-    br
-    label(for="email") Email:
-    input(type="email" id="email" name="email" required value=(typeof email !== 'undefined' ? email : ''))
-    br
-    br
-    label(for="password") Passwort:
-    input(type="password" id="password" name="password" required)
-    br
-    br
-    button(type="submit") Registrieren
+  if !success
+    form(action="/register" method="POST")
+      label(for="username") Benutzername:
+      input(type="text" id="username" name="username" required value=(typeof username !== 'undefined' ? username : ''))
+      br
+      br
+      label(for="name") Name:
+      input(type="text" id="name" name="name" required value=(typeof name !== 'undefined' ? name : ''))
+      br
+      br
+      label(for="email") Email:
+      input(type="email" id="email" name="email" required value=(typeof email !== 'undefined' ? email : ''))
+      br
+      br
+      label(for="password") Passwort:
+      input(type="password" id="password" name="password" required)
+      br
+      br
+      label(for="confirm") Passwort bestätigen:
+      input(type="password" id="confirm" name="confirm" required)
+      br
+      br
+      button(type="submit") Registrieren
+
+  if success
+    div(style="color: green; font-size: 1.5em; font-weight: bold; margin-top: 20px;")
+      | ✅ #{success}
+    p(style="font-size: small; color: gray")
+      | Du wirst in wenigen Sekunden zur Login-Seite weitergeleitet...
+
+    script.
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 5000);
