@@ -62,12 +62,25 @@ app.get("/about", (req, res) => {
 
 // Registrierung anzeigen
 app.get("/register", (req, res) => {
+  if (req.session.user) {
+    return res.redirect("/dashboard");
+  }
   res.render("register");
 });
 
+
 // Registrierung verarbeiten
 app.post("/register", async (req, res) => {
-  const { username, name, email, password } = req.body;
+  const { username, name, email, password, confirm } = req.body;
+
+  if (password !== confirm) {
+    return res.render("register", {
+      error: "Passwörter stimmen nicht überein.",
+      username,
+      name,
+      email
+    });
+  }
 
   try {
     // Passwort hashen
@@ -84,7 +97,11 @@ app.post("/register", async (req, res) => {
       );
 
       // Erfolg → Weiterleitung zur Login-Seite (kannst du später bauen)
-      res.status(201).redirect("/login");
+      return res.render("register", {
+        success: "Registrierung erfolgreich!",
+      });
+      
+
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
         return res.status(400).render('register', {
@@ -178,7 +195,7 @@ app.get("/logout", (req, res) => {
     if (err) {
       console.error("Logout-Fehler:", err);
     }
-    res.redirect("/login");
+    res.redirect("/");
   });
 });
 
