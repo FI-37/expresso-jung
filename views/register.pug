@@ -1,0 +1,22 @@
+extends layout.pug
+ 
+block content
+    h2 Registrierung
+    form(action="/register" method="POST")
+        label(for="username") Benutzername:
+        input(type="text" id="username" name="username" required)
+        br
+        br
+        label(for="name") Name:
+        input(type="text" id="name" name="name" required)
+        br
+        br
+        label(for="email") Email:
+        input(type="email" id="email" name="email" required)
+        br
+        br
+        label(for="password") Passwort:
+        input(type="password" id="password" name="password" required)
+        br
+        br
+        button(type="submit") Registrieren
