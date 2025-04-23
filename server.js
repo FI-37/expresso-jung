@@ -96,7 +96,7 @@ app.post("/register", async (req, res) => {
         [username, name, email, hashedPassword]
       );
 
-      // Erfolg → Weiterleitung zur Login-Seite (kannst du später bauen)
+      // Erfolg → Weiterleitung zur Login-Seite via timer in register.pug
       return res.render("register", {
         success: "Registrierung erfolgreich!",
       });
