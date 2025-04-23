@@ -1,0 +1,11 @@
+extends layout
+
+block content
+  h1 Dashboard
+  p Willkommen zurück, #{user.name}!
+  p Du bist jetzt eingeloggt als #{user.username}.
+
+  img(src=`/images/${user.avatar}` alt="Profilbild von #{user.name}" width="150")
+
+  br
+  a(href="/logout") Logout
