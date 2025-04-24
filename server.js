@@ -3,28 +3,42 @@ import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import mariadb from "mariadb";
-import session from "express-session"; // Express-Server
+// import session from "express-session"; // Express-Server
+import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser'; // Cookies
+
+import dotenv from "dotenv";
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+
+
+const app = express();
+app.use(cookieParser());
 
 // __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+
 
 // Statische Dateien (wie Bilder, CSS, JS) aus dem "public"-Ordner bereitstellen
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use(
-  session({
-    secret: "mein-geheimnis", // kann beliebig sein
-    resave: false,
-    saveUninitialized: false,
-  })
-);
-
-// Macht den aktuell eingeloggten Benutzer (Session) in allen Pug-Templates als "user" verfügbar
+// Middleware für Cookies
 app.use((req, res, next) => {
-  res.locals.user = req.session.user;
+  const token = req.cookies.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      res.locals.user = decoded;
+    } catch {
+      res.locals.user = null;
+    }
+  } else {
+    res.locals.user = null;
+  }
   next();
 });
 
@@ -45,6 +59,26 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Middleware zur Authentifizierung mit JWT
+// Diese Funktion prüft, ob ein gültiger JWT-Token im Cookie vorhanden ist.
+// Wenn ja, wird der Benutzer in `req.user` gespeichert und weitergeleitet (next())
+// Wenn nicht, erfolgt eine Weiterleitung zur Login-Seite
+function authenticateToken(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.redirect("/login");
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.error("Ungültiger Token:", err.message);
+    res.clearCookie("token");
+    res.redirect("/login");
+  }
+}
+
+
 // Startseite
 app.get("/", (req, res) => {
   res.render("index", {
@@ -62,11 +96,12 @@ app.get("/about", (req, res) => {
 
 // Registrierung anzeigen
 app.get("/register", (req, res) => {
-  if (req.session.user) {
+  if (res.locals.user) {
     return res.redirect("/dashboard");
   }
   res.render("register");
 });
+
 
 
 // Registrierung verarbeiten
@@ -156,15 +191,19 @@ app.post("/login", async (req, res) => {
       }
 
       // Erfolgreich eingeloggt → Session speichern
-      req.session.user = {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        avatar: user.avatar,
-      };
-
-      // Weiterleitung zum geschützten Bereich
-      res.redirect("/dashboard");
+      const token = jwt.sign(
+        {
+          username: user.username,
+          name: user.name,
+          email: user.email
+        },
+        JWT_SECRET, // sicher aus .env
+        { expiresIn: '1h' }
+      );
+      
+      
+      res.cookie('token', token, { httpOnly: true }).redirect('/dashboard');
+      
     } finally {
       conn.release();
     }
@@ -177,27 +216,26 @@ app.post("/login", async (req, res) => {
 // -----------------------------------------------------------------------------------------------
 // Geschützte Seite (Dashboard)
 
-app.get("/dashboard", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
+// Geschützte Route: Nur zugänglich, wenn gültiges JWT-Token vorhanden ist
+// Die Authentifizierung übernimmt die Middleware "authenticateToken"
 
+// Dashboard ist jetzt mit JWT geschützt
+app.get("/dashboard", authenticateToken, (req, res) => {
   res.render("dashboard", {
-    user: req.session.user,
+    user: req.user, // kommt aus dem verifizierten JWT
   });
 });
+
 
 // -----------------------------------------------------------------------------------------------
 // Logout verarbeiten
 
+// Logout verarbeiten (JWT-basiert)
 app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Logout-Fehler:", err);
-    }
-    res.redirect("/");
-  });
+  res.clearCookie("token"); // Token löschen → "ausloggen"
+  res.redirect("/");
 });
+
 
 // -----------------------------------------------------------------------------------------------
 
