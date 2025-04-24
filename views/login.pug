@@ -2,15 +2,17 @@ extends layout
 
 block content
   h1 Login-Seite
-  p Du wurdest erfolgreich registriert. Bitte logge dich ein.
-    form(action="/login" method="POST")
-        label(for="username") Benutzername:
-        input(type="text" id="username" name="username" required)
-        br
-        br
-        label(for="password") Passwort:
-        input(type="password" id="password" name="password" required)
-        br
-        br
-        button(type="submit") Einloggen
 
+  if success && success.length
+    p(style="color: green; font-weight: bold")= success[0]
+
+  form(action="/login" method="POST")
+    label(for="username") Benutzername:
+    input(type="text" id="username" name="username" required)
+    br
+    br
+    label(for="password") Passwort:
+    input(type="password" id="password" name="password" required)
+    br
+    br
+    button(type="submit") Einloggen
