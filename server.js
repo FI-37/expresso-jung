@@ -7,8 +7,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import mariadb from "mariadb";
-import jwt from 'jsonwebtoken';
-import cookieParser from 'cookie-parser'; // Cookies
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser"; // Cookies
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -93,7 +93,7 @@ function authenticateToken(req, res, next) {
 }
 
 //------------------------------------------------------------------------------------------------//
-//                                     Öffentliche Seiten 
+//                                     Öffentliche Seiten
 //------------------------------------------------------------------------------------------------//
 
 // Startseite
@@ -121,8 +121,6 @@ app.get("/register", (req, res) => {
   res.render("register");
 });
 
-
-
 // Registrierung verarbeiten
 app.post("/register", async (req, res) => {
   const { username, name, email, password, confirm } = req.body;
@@ -132,20 +130,25 @@ app.post("/register", async (req, res) => {
       error: "Passwörter stimmen nicht überein.",
       username,
       name,
-      email
+      email,
     });
   }
 
   // Passwort-Komplexität prüfen
-  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*]/.test(password)) {
+  if (
+    password.length < 8 ||
+    !/\d/.test(password) ||
+    !/[!@#$%^&*]/.test(password)
+  ) {
     return res.render("register", {
-      error: "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen enthalten.",
+      error:
+        "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen enthalten.",
       username,
       name,
-      email
+      email,
     });
   }
-  
+
   try {
     // Passwort hashen
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -164,17 +167,14 @@ app.post("/register", async (req, res) => {
       return res.render("register", {
         success: "Registrierung erfolgreich!",
       });
-      
-
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).render('register', {
-          error: 'Diese E-Mail-Adresse ist bereits registriert.',
+        return res.status(400).render("register", {
+          error: "Diese E-Mail-Adresse ist bereits registriert.",
           username,
           name,
-          email
+          email,
         });
-        
       }
 
       console.error("Fehler beim INSERT:", err);
@@ -202,39 +202,39 @@ app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const conn = await pool.getConnection();
+    const conn = await pool.getConnection(); // Verbindung mit DB aufbauen
 
     try {
+      // Benutzer anhand des Benutzernamens aus der DB abfragen
       const rows = await conn.query("SELECT * FROM user WHERE username = ?", [
         username,
       ]);
 
-      if (rows.length === 0) {
+      const user = rows[0]; // Falls vorhanden: der erste Eintrag
+      if (!user) {
         return res.status(401).send("Benutzer nicht gefunden");
       }
-
-      const user = rows[0];
       const match = await bcrypt.compare(password, user.password_hash);
 
       if (!match) {
         return res.status(401).send("Falsches Passwort");
       }
 
-      // Erfolgreich eingeloggt → Session speichern
+      // Erfolgreich eingeloggt → JWT-Token erstellen (nur noch mit user.id und user.username)
       const token = jwt.sign(
         {
           id: user.id,
-          username: user.username
+          username: user.username,
         },
         JWT_SECRET, // sicher aus .env
-        { expiresIn: '30s' } // Token läuft nach 30 Sekunden ab für Testzwecke
+        { expiresIn: "30s" } // Token läuft nach 30 Sekunden ab für Testzwecke
       );
-      
-      
-      res.cookie('token', token, { httpOnly: true }).redirect('/dashboard');
-      
+
+      // Token als httpOnly-Cookie setzen und zum Dashboard weiterleiten
+      res.cookie("token", token, { httpOnly: true }).redirect("/dashboard");
+
     } finally {
-      conn.release();
+      conn.release(); // Verbindung zur DB wieder freigeben
     }
   } catch (err) {
     console.error("Login-Fehler:", err);
@@ -243,7 +243,7 @@ app.post("/login", async (req, res) => {
 });
 
 //------------------------------------------------------------------------------------------------//
-//                                          Dashboard 
+//                                          Dashboard
 //------------------------------------------------------------------------------------------------//
 // Die Authentifizierung übernimmt die Middleware "authenticateToken"
 
@@ -255,7 +255,7 @@ app.get("/dashboard", authenticateToken, (req, res) => {
 });
 
 //------------------------------------------------------------------------------------------------//
-//                                            Logout 
+//                                            Logout
 //------------------------------------------------------------------------------------------------//
 
 // Logout verarbeiten (JWT-basiert)
