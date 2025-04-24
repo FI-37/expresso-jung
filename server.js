@@ -136,6 +136,16 @@ app.post("/register", async (req, res) => {
     });
   }
 
+  // Passwort-Komplexität prüfen
+  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*]/.test(password)) {
+    return res.render("register", {
+      error: "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen enthalten.",
+      username,
+      name,
+      email
+    });
+  }
+  
   try {
     // Passwort hashen
     const hashedPassword = await bcrypt.hash(password, 10);
