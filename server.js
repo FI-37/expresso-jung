@@ -10,12 +10,25 @@ import mariadb from "mariadb";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser"; // Cookies
 import dotenv from "dotenv";
+import session from "express-session";
+import flash from "connect-flash";
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const app = express();
 app.use(cookieParser());
+
+const SESSION_SECRET = process.env.SESSION_SECRET; // Geheimes Psw aus .env holen für die Session-Initialisierung
+
+// Flash Messages
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 
 // Ermittle __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +68,16 @@ app.use((req, res, next) => {
 // Middleware für Formulardaten
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Flash-Messages initialisieren
+app.use(flash());
+
+// Flash-Nachrichten in Pug verfügbar machen
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  next();
+});
 
 //------------------------------------------------------------------------------------------------//
 //                                     Datenbankverbindung
@@ -118,7 +141,11 @@ app.get("/register", (req, res) => {
   if (res.locals.user) {
     return res.redirect("/dashboard");
   }
-  res.render("register");
+
+  const formData = req.session.formData || {}; // Felder sichern
+  req.session.formData = null; // einmalig verwenden
+
+  res.render("register", { formData });
 });
 
 // Registrierung verarbeiten
@@ -140,13 +167,9 @@ app.post("/register", async (req, res) => {
     !/\d/.test(password) ||
     !/[!@#$%^&*]/.test(password)
   ) {
-    return res.render("register", {
-      error:
-        "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen enthalten.",
-      username,
-      name,
-      email,
-    });
+    req.session.formData = { username, name, email }; // alles außer Passwort bleibt erhalten
+    req.flash("error", "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen !@#$%^&* enthalten.");
+    return res.redirect("/register");
   }
 
   try {
@@ -163,10 +186,10 @@ app.post("/register", async (req, res) => {
         [username, name, email, hashedPassword]
       );
 
-      // Erfolg → Weiterleitung zur Login-Seite via timer in register.pug
-      return res.render("register", {
-        success: "Registrierung erfolgreich!",
-      });
+      // Erfolg → Weiterleitung zur Login-Seite mit Flash-Message
+      req.flash("success", "Registrierung erfolgreich! Du kannst dich jetzt einloggen.");
+      return res.redirect("/login");
+
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
         return res.status(400).render("register", {
@@ -232,7 +255,6 @@ app.post("/login", async (req, res) => {
 
       // Token als httpOnly-Cookie setzen und zum Dashboard weiterleiten
       res.cookie("token", token, { httpOnly: true }).redirect("/dashboard");
-
     } finally {
       conn.release(); // Verbindung zur DB wieder freigeben
     }
