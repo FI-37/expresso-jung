@@ -1,32 +1,42 @@
+//----------------------------------------------------------------------------------------------//
+//                                    Imports & Initialisierung
+//----------------------------------------------------------------------------------------------//
+
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import mariadb from "mariadb";
-// import session from "express-session"; // Express-Server
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser'; // Cookies
-
 import dotenv from "dotenv";
+
 dotenv.config();
-
 const JWT_SECRET = process.env.JWT_SECRET;
-
-
 
 const app = express();
 app.use(cookieParser());
 
-// __dirname in ES Modules
+// Ermittle __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
+//------------------------------------------------------------------------------------------------//
+//                                     Statische Dateien & View-Engine
+//------------------------------------------------------------------------------------------------//
 
 // Statische Dateien (wie Bilder, CSS, JS) aus dem "public"-Ordner bereitstellen
 app.use(express.static(path.join(__dirname, "public")));
 
-// Middleware für Cookies
+// View-Engine & Views-Ordner
+app.set("view engine", "pug");
+app.set("views", path.join(__dirname, "views"));
+
+//------------------------------------------------------------------------------------------------//
+//                                     Midleware: Cookies & Formulardaten
+//------------------------------------------------------------------------------------------------//
+
+// JWT-Token aus Cookie prüfen und user global verfügbar machen
 app.use((req, res, next) => {
   const token = req.cookies.token;
   if (token) {
@@ -42,7 +52,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Datenbankverbindung
+// Middleware für Formulardaten
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+//------------------------------------------------------------------------------------------------//
+//                                     Datenbankverbindung
+//------------------------------------------------------------------------------------------------//
+// MariaDB-Datenbankverbindung
+
 const pool = mariadb.createPool({
   host: "ajubuntu",
   user: "alexjung",
@@ -51,18 +69,14 @@ const pool = mariadb.createPool({
   connectionLimit: 5,
 });
 
-// View-Engine & Views-Ordner
-app.set("view engine", "pug");
-app.set("views", path.join(__dirname, "views"));
-
-// Middleware für Formulardaten
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
+//------------------------------------------------------------------------------------------------//
+//                                     Middleware: Authentifizierung
+//------------------------------------------------------------------------------------------------//
 // Middleware zur Authentifizierung mit JWT
 // Diese Funktion prüft, ob ein gültiger JWT-Token im Cookie vorhanden ist.
 // Wenn ja, wird der Benutzer in `req.user` gespeichert und weitergeleitet (next())
 // Wenn nicht, erfolgt eine Weiterleitung zur Login-Seite
+
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.redirect("/login");
@@ -78,6 +92,9 @@ function authenticateToken(req, res, next) {
   }
 }
 
+//------------------------------------------------------------------------------------------------//
+//                                     Öffentliche Seiten 
+//------------------------------------------------------------------------------------------------//
 
 // Startseite
 app.get("/", (req, res) => {
@@ -92,7 +109,9 @@ app.get("/about", (req, res) => {
   res.render("about", { title: "Über uns" });
 });
 
-// -----------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
+//                             Registrierung (Formular und Verarbeitung)
+//------------------------------------------------------------------------------------------------//
 
 // Registrierung anzeigen
 app.get("/register", (req, res) => {
@@ -159,10 +178,11 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------------------------
-// Login-Seite anzeigen
+//------------------------------------------------------------------------------------------------//
+//                                Login (Formular und Verarbeitung mit JWT)
+//------------------------------------------------------------------------------------------------//
 
-// Registrierung validieren
+// Login-Seite anzeigen
 app.get("/login", (req, res) => {
   res.render("login");
 });
@@ -199,7 +219,7 @@ app.post("/login", async (req, res) => {
           avatar: user.avatar,
         },
         JWT_SECRET, // sicher aus .env
-        { expiresIn: '1h' }
+        { expiresIn: '30s' } // Token läuft nach 30 Sekunden ab für Testzwecke
       );
       
       
@@ -214,10 +234,9 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------------------------
-// Geschützte Seite (Dashboard)
-
-// Geschützte Route: Nur zugänglich, wenn gültiges JWT-Token vorhanden ist
+//------------------------------------------------------------------------------------------------//
+//                                          Dashboard 
+//------------------------------------------------------------------------------------------------//
 // Die Authentifizierung übernimmt die Middleware "authenticateToken"
 
 // Dashboard ist jetzt mit JWT geschützt
@@ -227,9 +246,9 @@ app.get("/dashboard", authenticateToken, (req, res) => {
   });
 });
 
-
-// -----------------------------------------------------------------------------------------------
-// Logout verarbeiten
+//------------------------------------------------------------------------------------------------//
+//                                            Logout 
+//------------------------------------------------------------------------------------------------//
 
 // Logout verarbeiten (JWT-basiert)
 app.get("/logout", (req, res) => {
@@ -237,8 +256,9 @@ app.get("/logout", (req, res) => {
   res.redirect("/");
 });
 
-
-// -----------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
+//                                 Fehlerbehandlung & Serverstart
+//------------------------------------------------------------------------------------------------//--------------------------------------------------------------------------------
 
 // Fehlerbehandlung
 app.use((err, req, res, next) => {
