@@ -3,40 +3,56 @@ extends layout
 block content
   h2 Registrierung
 
-  if error
-    p(style="color: red") #{error}
+  // Erfolgsmeldung anzeigen
+  if success && success.length
+    p(style="color: green; font-weight: bold")= success[0]
 
-  if !success
-    form(action="/register" method="POST")
-      label(for="username") Benutzername:
-      input(type="text" id="username" name="username" required value=(typeof username !== 'undefined' ? username : ''))
-      br
-      br
-      label(for="name") Name:
-      input(type="text" id="name" name="name" required value=(typeof name !== 'undefined' ? name : ''))
-      br
-      br
-      label(for="email") Email:
-      input(type="email" id="email" name="email" required value=(typeof email !== 'undefined' ? email : ''))
-      br
-      br
-      label(for="password") Passwort:
-      input(type="password" id="password" name="password" required)
-      br
-      br
-      label(for="confirm") Passwort bestätigen:
-      input(type="password" id="confirm" name="confirm" required)
-      br
-      br
-      button(type="submit") Registrieren
+  // Fehlermeldung anzeigen
+  if error && error.length
+    p(style="color: red; font-weight: bold")= error[0]
 
-  if success
-    div(style="color: green; font-size: 1.5em; font-weight: bold; margin-top: 20px;")
-      | ✅ #{success}
-    p(style="font-size: small; color: gray")
-      | Du wirst in wenigen Sekunden zur Login-Seite weitergeleitet...
+  form(action="/register" method="POST")
+    label(for="username") Benutzername:
+    input(
+      type="text"
+      id="username"
+      name="username"
+      required
+      value=(formData && formData.username ? formData.username : '')
+    )
+    br
+    br
 
-    script.
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 5000);
+    label(for="name") Name:
+    input(
+      type="text"
+      id="name"
+      name="name"
+      required
+      value=(formData && formData.name ? formData.name : '')
+    )
+    br
+    br
+
+    label(for="email") Email:
+    input(
+      type="email"
+      id="email"
+      name="email"
+      required
+      value=(formData && formData.email ? formData.email : '')
+    )
+    br
+    br
+
+    label(for="password") Passwort:
+    input(type="password" id="password" name="password" required)
+    br
+    br
+
+    label(for="confirm") Passwort bestätigen:
+    input(type="password" id="confirm" name="confirm" required)
+    br
+    br
+
+    button(type="submit") Registrieren
