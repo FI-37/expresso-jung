@@ -195,7 +195,8 @@ app.post("/login", async (req, res) => {
         {
           username: user.username,
           name: user.name,
-          email: user.email
+          email: user.email,
+          avatar: user.avatar,
         },
         JWT_SECRET, // sicher aus .env
         { expiresIn: '1h' }
