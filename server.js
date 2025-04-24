@@ -33,7 +33,7 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
 //------------------------------------------------------------------------------------------------//
-//                                     Midleware: Cookies & Formulardaten
+//                                     Middleware: Cookies & Formulardaten
 //------------------------------------------------------------------------------------------------//
 
 // JWT-Token aus Cookie prüfen und user global verfügbar machen
@@ -213,10 +213,8 @@ app.post("/login", async (req, res) => {
       // Erfolgreich eingeloggt → Session speichern
       const token = jwt.sign(
         {
-          username: user.username,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar,
+          id: user.id,
+          username: user.username
         },
         JWT_SECRET, // sicher aus .env
         { expiresIn: '30s' } // Token läuft nach 30 Sekunden ab für Testzwecke
