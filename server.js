@@ -5,16 +5,20 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import bcrypt from "bcryptjs";
-import mariadb from "mariadb";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser"; // Cookies
+
 import dotenv from "dotenv";
+dotenv.config();
+
 import session from "express-session";
 import flash from "connect-flash";
 
-dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET;
+import pagesRoutes from './routes/pages.js';
+import authRoutes from './routes/authRoutes.js';
+import dashboardRoutes from './routes/dashboard.js';
+import { authenticateToken } from './middleware/authMiddleware.js';
+import pool from './db/db.js';
 
 const app = express();
 app.use(cookieParser());
@@ -49,12 +53,12 @@ app.set("views", path.join(__dirname, "views"));
 //                                     Middleware: Cookies & Formulardaten
 //------------------------------------------------------------------------------------------------//
 
-// JWT-Token aus Cookie prüfen und user global verfügbar machen
+// JWT-Token aus Cookie prüfen und Benutzer global in res.locals.user bereitstellen (z.B. für Navbar, Views etc.)
 app.use((req, res, next) => {
   const token = req.cookies.token;
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       res.locals.user = decoded;
     } catch {
       res.locals.user = null;
@@ -79,223 +83,27 @@ app.use((req, res, next) => {
   next();
 });
 
-//------------------------------------------------------------------------------------------------//
-//                                     Datenbankverbindung
-//------------------------------------------------------------------------------------------------//
-// MariaDB-Datenbankverbindung
+// Seitenrouten (Startseite, About)
+app.use('/', pagesRoutes);
+// Authentifizierung (Login, Registrierung)
+app.use('/', authRoutes);
+// Dashboard (geschützt)
+app.use('/', dashboardRoutes);
 
-const pool = mariadb.createPool({
-  host: "ajubuntu",
-  user: "alexjung",
-  password: "links234",
-  database: "test_db",
-  connectionLimit: 5,
-});
+app.locals.pool = pool; // Datenbankverbindung global verfügbar machen
 
 //------------------------------------------------------------------------------------------------//
-//                                     Middleware: Authentifizierung
+//                                 Fehlerbehandlung, Export & Serverstart
 //------------------------------------------------------------------------------------------------//
-// Middleware zur Authentifizierung mit JWT
-// Diese Funktion prüft, ob ein gültiger JWT-Token im Cookie vorhanden ist.
-// Wenn ja, wird der Benutzer in `req.user` gespeichert und weitergeleitet (next())
-// Wenn nicht, erfolgt eine Weiterleitung zur Login-Seite
-
-function authenticateToken(req, res, next) {
-  const token = req.cookies.token;
-  if (!token) return res.redirect("/login");
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    console.error("Ungültiger Token:", err.message);
-    res.clearCookie("token");
-    res.redirect("/login");
-  }
-}
-
-//------------------------------------------------------------------------------------------------//
-//                                     Öffentliche Seiten
-//------------------------------------------------------------------------------------------------//
-
-// Startseite
-app.get("/", (req, res) => {
-  res.render("index", {
-    title: "Erstes Express-Projekt",
-    message: "Willkommen bei Ihrem ersten Express-Server mit Pug!",
-  });
-});
-
-// Über-uns-Seite
-app.get("/about", (req, res) => {
-  res.render("about", { title: "Über uns" });
-});
-
-//------------------------------------------------------------------------------------------------//
-//                             Registrierung (Formular und Verarbeitung)
-//------------------------------------------------------------------------------------------------//
-
-// Registrierung anzeigen
-app.get("/register", (req, res) => {
-  if (res.locals.user) {
-    return res.redirect("/dashboard");
-  }
-
-  const formData = req.session.formData || {}; // Felder sichern
-  req.session.formData = null; // einmalig verwenden
-
-  res.render("register", { formData });
-});
-
-// Registrierung verarbeiten
-app.post("/register", async (req, res) => {
-  const { username, name, email, password, confirm } = req.body;
-
-  if (password !== confirm) {
-    return res.render("register", {
-      error: "Passwörter stimmen nicht überein.",
-      username,
-      name,
-      email,
-    });
-  }
-
-  // Passwort-Komplexität prüfen
-  if (
-    password.length < 8 ||
-    !/\d/.test(password) ||
-    !/[!@#$%^&*]/.test(password)
-  ) {
-    req.session.formData = { username, name, email }; // alles außer Passwort bleibt erhalten
-    req.flash("error", "Passwort muss mindestens 8 Zeichen, eine Zahl und ein Sonderzeichen !@#$%^&* enthalten.");
-    return res.redirect("/register");
-  }
-
-  try {
-    // Passwort hashen
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Verbindung zur DB holen
-    const conn = await pool.getConnection();
-
-    try {
-      // Daten einfügen
-      await conn.query(
-        "INSERT INTO user (username, name, email, password_hash) VALUES (?, ?, ?, ?)",
-        [username, name, email, hashedPassword]
-      );
-
-      // Erfolg → Weiterleitung zur Login-Seite mit Flash-Message
-      req.flash("success", "Registrierung erfolgreich! Du kannst dich jetzt einloggen.");
-      return res.redirect("/login");
-
-    } catch (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).render("register", {
-          error: "Diese E-Mail-Adresse ist bereits registriert.",
-          username,
-          name,
-          email,
-        });
-      }
-
-      console.error("Fehler beim INSERT:", err);
-      res.status(500).send("Fehler beim Speichern in der Datenbank");
-    } finally {
-      conn.release();
-    }
-  } catch (err) {
-    console.error("Fehler bei Registrierung:", err);
-    res.status(500).send("Fehler bei der Registrierung");
-  }
-});
-
-//------------------------------------------------------------------------------------------------//
-//                                Login (Formular und Verarbeitung mit JWT)
-//------------------------------------------------------------------------------------------------//
-
-// Login-Seite anzeigen
-app.get("/login", (req, res) => {
-  res.render("login");
-});
-
-// Login verarbeiten
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const conn = await pool.getConnection(); // Verbindung mit DB aufbauen
-
-    try {
-      // Benutzer anhand des Benutzernamens aus der DB abfragen
-      const rows = await conn.query("SELECT * FROM user WHERE username = ?", [
-        username,
-      ]);
-
-      const user = rows[0]; // Falls vorhanden: der erste Eintrag
-      if (!user) {
-        return res.status(401).send("Benutzer nicht gefunden");
-      }
-      const match = await bcrypt.compare(password, user.password_hash);
-
-      if (!match) {
-        return res.status(401).send("Falsches Passwort");
-      }
-
-      // Erfolgreich eingeloggt → JWT-Token erstellen (nur noch mit user.id und user.username)
-      const token = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-        },
-        JWT_SECRET, // sicher aus .env
-        { expiresIn: "30s" } // Token läuft nach 30 Sekunden ab für Testzwecke
-      );
-
-      // Token als httpOnly-Cookie setzen und zum Dashboard weiterleiten
-      res.cookie("token", token, { httpOnly: true }).redirect("/dashboard");
-    } finally {
-      conn.release(); // Verbindung zur DB wieder freigeben
-    }
-  } catch (err) {
-    console.error("Login-Fehler:", err);
-    res.status(500).send("Interner Fehler beim Login");
-  }
-});
-
-//------------------------------------------------------------------------------------------------//
-//                                          Dashboard
-//------------------------------------------------------------------------------------------------//
-// Die Authentifizierung übernimmt die Middleware "authenticateToken"
-
-// Dashboard ist jetzt mit JWT geschützt
-app.get("/dashboard", authenticateToken, (req, res) => {
-  res.render("dashboard", {
-    user: req.user, // kommt aus dem verifizierten JWT
-  });
-});
-
-//------------------------------------------------------------------------------------------------//
-//                                            Logout
-//------------------------------------------------------------------------------------------------//
-
-// Logout verarbeiten (JWT-basiert)
-app.get("/logout", (req, res) => {
-  res.clearCookie("token"); // Token löschen → "ausloggen"
-  res.redirect("/");
-});
-
-//------------------------------------------------------------------------------------------------//
-//                                 Fehlerbehandlung & Serverstart
-//------------------------------------------------------------------------------------------------//--------------------------------------------------------------------------------
 
 // Fehlerbehandlung
 app.use((err, req, res, next) => {
-  console.error("Fehler:", err.message);
   console.error(err.stack);
   res.status(500).send(`<pre>${err.message}</pre>`);
 });
+
+// Export für Route-Zugriff (z. B. Middleware)
+export { app, authenticateToken };
 
 // Server starten
 app.listen(3000, () => {
