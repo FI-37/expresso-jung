@@ -1,18 +1,21 @@
 extends layout
 
 block content
-  h1 Login-Seite
+  .container.mt-5
+    .row.justify-content-center
+      .col-md-6
+        h1.text-center.mb-4 Login-Seite
 
-  if success && success.length
-    p(style="color: green; font-weight: bold")= success[0]
+        if success && success.length
+          p.alert.alert-success.text-center= success[0]
 
-  form(action="/login" method="POST")
-    label(for="username") Benutzername:
-    input(type="text" id="username" name="username" required)
-    br
-    br
-    label(for="password") Passwort:
-    input(type="password" id="password" name="password" required)
-    br
-    br
-    button(type="submit") Einloggen
+        form(action="/login" method="POST")
+          .mb-3
+            label.form-label(for="username") Benutzername:
+            input.form-control(type="text" id="username" name="username" required)
+          
+          .mb-3
+            label.form-label(for="password") Passwort:
+            input.form-control(type="password" id="password" name="password" required)
+          
+          button.btn.btn-primary.w-100(type="submit") Einloggen
