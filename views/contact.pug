@@ -1,0 +1,45 @@
+extends layout
+
+block content
+  if success && success.length
+    .alert.alert-success.fade.show(role="alert")
+      = success
+
+  if error && error.length
+    .alert.alert-danger.fade.show(role="alert")
+      = error
+
+  .container
+    .row.justify-content-center
+      .col-md-8
+        h2.text-center Kontakt
+        p.text-center Hier könnten Sie uns kontaktieren.
+        p.text-center E-Mail: info@testwebsite.de | Telefon: 0123 456789
+        p.text-center Nutzen Sie gerne das Kontaktformular, um uns zu erreichen.
+
+        form(action="/contact" method="POST" class="bg-white p-4 rounded shadow-sm mt-4")
+          .mb-3
+            label(for="name" class="form-label") Name:
+            input(type="text" id="name" name="name" required class="form-control")
+
+          .mb-3
+            label(for="email" class="form-label") E-Mail:
+            input(type="email" id="email" name="email" required class="form-control")
+
+          .mb-3
+            label(for="message" class="form-label") Nachricht:
+            textarea(id="message" name="message" rows="5" required class="form-control")
+
+          button(type="submit" class="btn btn-primary mt-3 w-100") Absenden
+
+block scripts
+  script.
+    document.addEventListener('DOMContentLoaded', function () {
+      const alerts = document.querySelectorAll('.alert');
+      alerts.forEach(alert => {
+        setTimeout(() => {
+          alert.classList.remove('show'); // entfernt show -> Bootstrap blendet aus (mit Fade-Effekt!)
+          setTimeout(() => alert.remove(), 3000); // 0.5s warten bis wirklich entfernt
+        }, 3000); // erst 3 Sekunden warten, bevor der Fade startet
+      });
+    });
