@@ -1,16 +1,18 @@
 extends layout
 
 block content
-  h1= message
+  .container.mt-5
+    .row.justify-content-center
+      .col-md-8.text-center
+        h1.mb-4= message
 
-  if user
-    p Willkommen zurück, #{user.name}!
-    a(href="/dashboard") Zum Dashboard
-    |  |
-    a(href="/logout") Logout
-  else
-    p Noch keinen Account?
-    a(href="/register") Jetzt registrieren
-
-    p Bereits registriert?
-    a(href="/login") Hier einloggen
+        if user
+          p.lead.mb-4 Willkommen zurück, #{user.name}!
+          a.btn.btn-primary(href="/dashboard") Zum Dashboard
+          |  
+          a.btn.btn-outline-secondary.ms-2(href="/logout") Logout
+        else
+          p.lead.mb-4 Noch keinen Account?
+          a.btn.btn-success(href="/register") Jetzt registrieren
+          p.mt-3 Bereits registriert?
+          a.btn.btn-outline-primary(href="/login") Hier einloggen
