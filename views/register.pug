@@ -1,58 +1,56 @@
 extends layout
 
 block content
-  h2 Registrierung
+  .container.mt-5
+    .row.justify-content-center
+      .col-md-8
+        h2.text-center.mb-4 Registrierung
 
-  // Erfolgsmeldung anzeigen
-  if success && success.length
-    p(style="color: green; font-weight: bold")= success[0]
+        // Erfolgsmeldung anzeigen
+        if success && success.length
+          p.alert.alert-success.text-center= success[0]
 
-  // Fehlermeldung anzeigen
-  if error && error.length
-    p(style="color: red; font-weight: bold")= error[0]
+        // Fehlermeldung anzeigen
+        if error && error.length
+          p.alert.alert-danger.text-center= error[0]
 
-  form(action="/register" method="POST")
-    label(for="username") Benutzername:
-    input(
-      type="text"
-      id="username"
-      name="username"
-      required
-      value=(formData && formData.username ? formData.username : '')
-    )
-    br
-    br
+        form(action="/register" method="POST")
+          .mb-3
+            label.form-label(for="username") Benutzername:
+            input.form-control(
+              type="text"
+              id="username"
+              name="username"
+              required
+              value=(formData && formData.username ? formData.username : '')
+            )
 
-    label(for="name") Name:
-    input(
-      type="text"
-      id="name"
-      name="name"
-      required
-      value=(formData && formData.name ? formData.name : '')
-    )
-    br
-    br
+          .mb-3
+            label.form-label(for="name") Name:
+            input.form-control(
+              type="text"
+              id="name"
+              name="name"
+              required
+              value=(formData && formData.name ? formData.name : '')
+            )
 
-    label(for="email") Email:
-    input(
-      type="email"
-      id="email"
-      name="email"
-      required
-      value=(formData && formData.email ? formData.email : '')
-    )
-    br
-    br
+          .mb-3
+            label.form-label(for="email") Email:
+            input.form-control(
+              type="email"
+              id="email"
+              name="email"
+              required
+              value=(formData && formData.email ? formData.email : '')
+            )
 
-    label(for="password") Passwort:
-    input(type="password" id="password" name="password" required)
-    br
-    br
+          .mb-3
+            label.form-label(for="password") Passwort:
+            input.form-control(type="password" id="password" name="password" required)
 
-    label(for="confirm") Passwort bestätigen:
-    input(type="password" id="confirm" name="confirm" required)
-    br
-    br
+          .mb-3
+            label.form-label(for="confirm") Passwort bestätigen:
+            input.form-control(type="password" id="confirm" name="confirm" required)
 
-    button(type="submit") Registrieren
+          button.btn.btn-primary.w-100(type="submit") Registrieren
