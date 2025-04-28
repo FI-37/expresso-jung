@@ -1,69 +1,60 @@
-# expresso-jung
+# Expresso-Jung
 
-Expresso-Jung
+## Projektübersicht
+Dieses Projekt ist ein einfacher Webserver auf Basis von **Express.js** und **Pug**.  
+Ziel war es, eine kleine Website mit Benutzer-Authentifizierung und Kontaktformular zu entwickeln.
 
-Willkommen zu Expresso-Jung – ein Express.js-Projekt mit Pug-Templates, MariaDB-Anbindung und Bootstrap-Styling!
+## Hauptfunktionen
+- **Benutzerregistrierung** (mit Passwort-Validierung und Hashing)
+- **Benutzer-Login** (mit JWT-Token und Cookie-Handling)
+- **Dashboard** für eingeloggte User
+- **Kontaktformular** mit Flash-Messages
+- **Bootstrap 5** für modernes, responsives Design
 
-Projektbeschreibung
+## Verwendete Technologien
+- Node.js
+- Express.js
+- Pug (als Template-Engine)
+- MariaDB (als Datenbank)
+- bcryptjs (zum Hashen von Passwörtern)
+- jsonwebtoken (für Login-Sessions)
+- Bootstrap (über CDN eingebunden)
 
-Diese Webanwendung bietet:
-- Benutzerregistrierung und Login (mit Passwort-Hashing via bcryptjs und Authentifizierung über jsonwebtoken).
-- Login-geschütztes Dashboard.
-- Kontaktformular mit Flash-Nachrichten und Formularvalidierung.
-- Responsive Design mit Bootstrap 5.
-- Datenpersistenz mit einer MariaDB-Datenbank.
+## Projektstruktur
+- `/routes/` – Enthält die Route-Handler (`pages`, `authRoutes`, `dashboard`)
+- `/middleware/` – Authentifizierungs-Middleware
+- `/db/` – Verbindungsaufbau zur MariaDB-Datenbank
+- `/views/` – Pug-Templates für die Seiten
+- `/public/` – Statische Dateien (z.B. CSS)
 
-Die App ist in modularer Struktur aufgebaut:
-- routes/ – Express-Router für Seiten, Authentifizierung und Dashboard.
-- middleware/ – eigene Middleware für Authentifizierung (JWT).
-- db/ – zentrale Datenbankverbindung über Connection-Pool.
-- views/ – Pug-Templates für Layout und Einzelseiten.
-- public/ – statische Dateien wie eigenes CSS.
+## Einrichtung
+1. **Repository klonen**
+2. **Abhängigkeiten installieren:**
+   ```
+   npm install
+   ```
+3. **.env Datei erstellen** mit:
+   ```
+   SESSION_SECRET=dein-session-geheimnis
+   JWT_SECRET=dein-jwt-geheimnis
+   DB_HOST=dein-db-host
+   DB_USER=dein-db-user
+   DB_PASSWORD=dein-db-passwort
+   DB_NAME=deine-db
+   ```
+4. **Server starten:**
+   ```
+   npm run dev
+   ```
 
-Installation
+Server läuft standardmäßig unter:  
+➡️ http://localhost:3000
 
-1. Repository klonen:
+## Hinweise
+- Sessions werden mit express-session gespeichert (temporär im RAM).
+- Die Flash-Nachrichten (Erfolg/Fehler) werden automatisch wieder ausgeblendet.
+- Passwörter werden sicher gehasht in der Datenbank gespeichert.
 
-git clone <repository-url>
-cd projekt
+---
 
-2. Abhängigkeiten installieren:
-
-npm install
-
-3. .env Datei anlegen und folgende Variablen setzen:
-
-JWT_SECRET=deinGeheimerJWTKey
-SESSION_SECRET=deinGeheimesSessionPasswort
-DB_HOST=deinDBHost
-DB_USER=deinDBUser
-DB_PASSWORD=deinDBPasswort
-DB_NAME=deinDBName
-
-4. MariaDB-Datenbank erstellen:
-
-Nutze die SQL-Skripte aus /sql/, um die benötigten Tabellen anzulegen.
-
-5. Server starten:
-
-npm run dev
-
-(Standard-Port: http://localhost:3000)
-
-Verwendete Technologien
-
-- Express.js – Web-Server
-- Pug – Template Engine
-- MariaDB – Datenbank
-- Bootstrap 5 – Frontend-Framework
-- jsonwebtoken – Authentifizierung
-- bcryptjs – Passwort-Hashing
-- connect-flash – Flash-Nachrichten
-- express-session – Session Management
-
-Besonderheiten
-
-- Formulardaten bleiben nach Fehlern erhalten (außer Passwortfelder).
-- Flash-Nachrichten blenden automatisch aus (smoothes UX).
-- Logische Ordnerstruktur (Trennung von Routes, Middleware, DB, Views).
-- Vollständig vorbereitet für Deployment.
+© 2024 by Alex Jung  
