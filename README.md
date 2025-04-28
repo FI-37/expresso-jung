@@ -10,6 +10,7 @@ Ziel war es, eine kleine Website mit Benutzer-Authentifizierung und Kontaktformu
 - **Dashboard** für eingeloggte User
 - **Kontaktformular** mit Flash-Messages
 - **Bootstrap 5** für modernes, responsives Design
+- **dotenv** zum sicheren Verwalten von Umgebungsvariablen
 
 ## Verwendete Technologien
 - Node.js
@@ -54,6 +55,8 @@ Server läuft standardmäßig unter:
 - Sessions werden mit express-session gespeichert (temporär im RAM).
 - Die Flash-Nachrichten (Erfolg/Fehler) werden automatisch wieder ausgeblendet.
 - Passwörter werden sicher gehasht in der Datenbank gespeichert.
+- Die Datei `.env` wird **nicht** mit hochgeladen oder geteilt. Sie enthält sensible Daten.  
+  Du musst sie selbst erstellen, bevor du den Server startest.
 
 ---
 
